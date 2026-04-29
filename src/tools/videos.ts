@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getAuthClient } from "../auth/middleware.js";
+import { withAuthRetry } from "../auth/middleware.js";
 import { buildYouTubeClient } from "../youtube/client.js";
 import {
   uploadVideo, getVideo, listVideos, updateVideo,
@@ -28,9 +28,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "Upload a video file to YouTube with metadata and privacy settings.", inputSchema: UploadVideoSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const video = await uploadVideo(yt, params);
+        const video = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return uploadVideo(yt, params);
+        });
         trackQuota("videos.insert", QUOTA_COSTS["videos.insert"]);
         invalidateRelated("videos.insert");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.insert"] ?? 1600) });
@@ -52,9 +53,10 @@ export function registerVideoTools(server: McpServer): void {
           return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
         }
 
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const video = await getVideo(yt, params.videoId, params.parts as string[] | undefined);
+        const video = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return getVideo(yt, params.videoId, params.parts as string[] | undefined);
+        });
 
         if (!video) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.VIDEO_NOT_FOUND, `Video '${params.videoId}' not found.`, {
@@ -77,9 +79,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "List videos on a channel or search across YouTube with filters.", inputSchema: ListVideosSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const result = await listVideos(yt, params);
+        const result = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return listVideos(yt, params);
+        });
         trackQuota("videos.list", QUOTA_COSTS["videos.list"]);
         setCached("videos.list", params as Record<string, unknown>, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["videos.list"] ?? 1) });
@@ -95,9 +98,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "Update the metadata of an existing video (title, description, tags, category).", inputSchema: UpdateVideoSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const video = await updateVideo(yt, params);
+        const video = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return updateVideo(yt, params);
+        });
         trackQuota("videos.update", QUOTA_COSTS["videos.update"]);
         invalidateRelated("videos.update");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.update"] ?? 50) });
@@ -113,9 +117,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "Permanently delete a video. Requires confirm: true to prevent accidents.", inputSchema: DeleteVideoSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await deleteVideo(yt, params.videoId);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await deleteVideo(yt, params.videoId);
+        });
         trackQuota("videos.delete", QUOTA_COSTS["videos.delete"]);
         invalidateRelated("videos.delete");
         return toolResult({ success: true, data: { deleted: params.videoId }, quota: getQuotaSummary(QUOTA_COSTS["videos.delete"] ?? 50) });
@@ -131,9 +136,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "Like, dislike, or remove a rating from a video.", inputSchema: RateVideoSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await rateVideo(yt, params.videoId, params.rating);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await rateVideo(yt, params.videoId, params.rating);
+        });
         trackQuota("videos.rate", QUOTA_COSTS["videos.rate"]);
         return toolResult({ success: true, data: { videoId: params.videoId, rating: params.rating }, quota: getQuotaSummary(QUOTA_COSTS["videos.rate"] ?? 50) });
       } catch (err) {
@@ -148,9 +154,10 @@ export function registerVideoTools(server: McpServer): void {
     { description: "Upload and set a custom thumbnail for a video.", inputSchema: SetThumbnailSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const result = await setThumbnail(yt, params.videoId, params.thumbnailPath);
+        const result = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return setThumbnail(yt, params.videoId, params.thumbnailPath);
+        });
         trackQuota("thumbnails.set", QUOTA_COSTS["thumbnails.set"]);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["thumbnails.set"] ?? 50) });
       } catch (err) {

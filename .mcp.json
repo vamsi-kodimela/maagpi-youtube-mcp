@@ -3,16 +3,10 @@
     "maagpi-youtube-mcp": {
       "type": "stdio",
       "command": "node",
-      "args": ["--env-file=.env", "dist/index.js"]
-    },
-    "maagpi-youtube-mcp-npx": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "maagpi-youtube-mcp"],
-      "env": {
-        "YOUTUBE_CLIENT_ID": "${YOUTUBE_CLIENT_ID}",
-        "YOUTUBE_CLIENT_SECRET": "${YOUTUBE_CLIENT_SECRET}"
-      }
+      "args": [
+        "--env-file=.env",
+        "dist/index.js"
+      ]
     }
   }
 }

@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getAuthClient } from "../auth/middleware.js";
+import { withAuthRetry } from "../auth/middleware.js";
 import { buildYouTubeClient } from "../youtube/client.js";
 import {
   listCommentThreads, getCommentThread, replyToComment,
@@ -30,9 +30,10 @@ export function registerCommentTools(server: McpServer): void {
         const cached = getCached("commentThreads.list", cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const result = await listCommentThreads(yt, params.videoId, params);
+        const result = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return listCommentThreads(yt, params.videoId, params);
+        });
         trackQuota("commentThreads.list", QUOTA_COSTS["commentThreads.list"]);
         setCached("commentThreads.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["commentThreads.list"] ?? 1) });
@@ -48,9 +49,10 @@ export function registerCommentTools(server: McpServer): void {
     { description: "Get a single comment thread with its replies.", inputSchema: GetCommentThreadSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const thread = await getCommentThread(yt, params.commentThreadId, params.maxReplies);
+        const thread = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return getCommentThread(yt, params.commentThreadId, params.maxReplies);
+        });
         if (!thread) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.COMMENT_NOT_FOUND, `Comment thread '${params.commentThreadId}' not found.`);
         }
@@ -68,9 +70,10 @@ export function registerCommentTools(server: McpServer): void {
     { description: "Post a reply to an existing top-level comment on a video.", inputSchema: ReplyCommentSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const comment = await replyToComment(yt, params.parentCommentId, params.text);
+        const comment = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return replyToComment(yt, params.parentCommentId, params.text);
+        });
         trackQuota("comments.insert", QUOTA_COSTS["comments.insert"]);
         invalidateRelated("comments.insert");
         return toolResult({ success: true, data: comment, quota: getQuotaSummary(QUOTA_COSTS["comments.insert"] ?? 50) });
@@ -86,9 +89,10 @@ export function registerCommentTools(server: McpServer): void {
     { description: "Delete a comment by ID. Only works on comments owned by the authenticated account.", inputSchema: DeleteCommentSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await deleteComment(yt, params.commentId);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await deleteComment(yt, params.commentId);
+        });
         trackQuota("comments.delete", QUOTA_COSTS["comments.delete"]);
         invalidateRelated("comments.delete");
         return toolResult({ success: true, data: { deleted: params.commentId }, quota: getQuotaSummary(QUOTA_COSTS["comments.delete"] ?? 50) });
@@ -104,9 +108,10 @@ export function registerCommentTools(server: McpServer): void {
     { description: "Change moderation status of a comment: publish, hold for review, or reject. Optionally ban the author.", inputSchema: ModerateCommentSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await moderateComment(yt, params.commentId, params.moderationStatus, params.banAuthor);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await moderateComment(yt, params.commentId, params.moderationStatus, params.banAuthor);
+        });
         trackQuota("comments.setModerationStatus", QUOTA_COSTS["comments.setModerationStatus"]);
         invalidateRelated("comments.setModerationStatus");
         return toolResult({ success: true, data: { commentId: params.commentId, moderationStatus: params.moderationStatus }, quota: getQuotaSummary(QUOTA_COSTS["comments.setModerationStatus"] ?? 50) });

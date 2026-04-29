@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getAuthClient } from "../auth/middleware.js";
+import { withAuthRetry } from "../auth/middleware.js";
 import { buildAnalyticsClient } from "../youtube/client.js";
 import {
   queryVideoMetrics, queryChannelMetrics, queryTopVideos,
@@ -33,12 +33,13 @@ export function registerAnalyticsTools(server: McpServer): void {
         const cached = getCached(ANALYTICS_METHOD, cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const analytics = buildAnalyticsClient(auth);
-        const result = await queryVideoMetrics(
-          analytics, params.videoId, params.startDate, params.endDate,
-          params.metrics as string[], params.dimensions as string[] | undefined
-        );
+        const result = await withAuthRetry(async (auth) => {
+          const analytics = buildAnalyticsClient(auth);
+          return queryVideoMetrics(
+            analytics, params.videoId, params.startDate, params.endDate,
+            params.metrics as string[], params.dimensions as string[] | undefined
+          );
+        });
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -58,13 +59,14 @@ export function registerAnalyticsTools(server: McpServer): void {
         const cached = getCached(ANALYTICS_METHOD, cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const analytics = buildAnalyticsClient(auth);
-        const result = await queryChannelMetrics(
-          analytics, params.startDate, params.endDate,
-          params.metrics as string[], params.dimensions as string[] | undefined,
-          params.filters, params.maxResults
-        );
+        const result = await withAuthRetry(async (auth) => {
+          const analytics = buildAnalyticsClient(auth);
+          return queryChannelMetrics(
+            analytics, params.startDate, params.endDate,
+            params.metrics as string[], params.dimensions as string[] | undefined,
+            params.filters, params.maxResults
+          );
+        });
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -84,11 +86,12 @@ export function registerAnalyticsTools(server: McpServer): void {
         const cached = getCached(ANALYTICS_METHOD, cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const analytics = buildAnalyticsClient(auth);
-        const result = await queryTopVideos(
-          analytics, params.startDate, params.endDate, params.metric, params.maxResults, params.filters
-        );
+        const result = await withAuthRetry(async (auth) => {
+          const analytics = buildAnalyticsClient(auth);
+          return queryTopVideos(
+            analytics, params.startDate, params.endDate, params.metric, params.maxResults, params.filters
+          );
+        });
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -108,11 +111,12 @@ export function registerAnalyticsTools(server: McpServer): void {
         const cached = getCached(ANALYTICS_METHOD, cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const analytics = buildAnalyticsClient(auth);
-        const result = await queryAudienceRetention(
-          analytics, params.videoId, params.startDate, params.endDate
-        );
+        const result = await withAuthRetry(async (auth) => {
+          const analytics = buildAnalyticsClient(auth);
+          return queryAudienceRetention(
+            analytics, params.videoId, params.startDate, params.endDate
+          );
+        });
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -132,11 +136,12 @@ export function registerAnalyticsTools(server: McpServer): void {
         const cached = getCached(ANALYTICS_METHOD, cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const analytics = buildAnalyticsClient(auth);
-        const result = await queryRevenueReport(
-          analytics, params.startDate, params.endDate, params.dimensions as string[] | undefined
-        );
+        const result = await withAuthRetry(async (auth) => {
+          const analytics = buildAnalyticsClient(auth);
+          return queryRevenueReport(
+            analytics, params.startDate, params.endDate, params.dimensions as string[] | undefined
+          );
+        });
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });

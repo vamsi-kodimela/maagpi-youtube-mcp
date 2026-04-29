@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getAuthClient } from "../auth/middleware.js";
+import { withAuthRetry } from "../auth/middleware.js";
 import { buildYouTubeClient } from "../youtube/client.js";
 import {
   createPlaylist, updatePlaylist, deletePlaylist, getPlaylist, listPlaylists,
@@ -27,9 +27,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Create a new YouTube playlist with title, description, and privacy settings.", inputSchema: CreatePlaylistSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const playlist = await createPlaylist(yt, params);
+        const playlist = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return createPlaylist(yt, params);
+        });
         trackQuota("playlists.insert", QUOTA_COSTS["playlists.insert"]);
         invalidateRelated("playlists.insert");
         return toolResult({ success: true, data: playlist, quota: getQuotaSummary(QUOTA_COSTS["playlists.insert"] ?? 50) });
@@ -45,9 +46,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Update a playlist's title, description, or privacy status.", inputSchema: UpdatePlaylistSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const playlist = await updatePlaylist(yt, params.playlistId, params);
+        const playlist = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return updatePlaylist(yt, params.playlistId, params);
+        });
         trackQuota("playlists.update", QUOTA_COSTS["playlists.update"]);
         invalidateRelated("playlists.update");
         return toolResult({ success: true, data: playlist, quota: getQuotaSummary(QUOTA_COSTS["playlists.update"] ?? 50) });
@@ -63,9 +65,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Permanently delete a playlist. Requires confirm: true.", inputSchema: DeletePlaylistSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await deletePlaylist(yt, params.playlistId);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await deletePlaylist(yt, params.playlistId);
+        });
         trackQuota("playlists.delete", QUOTA_COSTS["playlists.delete"]);
         invalidateRelated("playlists.delete");
         return toolResult({ success: true, data: { deleted: params.playlistId }, quota: getQuotaSummary(QUOTA_COSTS["playlists.delete"] ?? 50) });
@@ -85,9 +88,10 @@ export function registerPlaylistTools(server: McpServer): void {
         const cached = getCached("playlists.get", cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const playlist = await getPlaylist(yt, params.playlistId, params.parts as string[] | undefined);
+        const playlist = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return getPlaylist(yt, params.playlistId, params.parts as string[] | undefined);
+        });
         if (!playlist) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.PLAYLIST_NOT_FOUND, `Playlist '${params.playlistId}' not found.`);
         }
@@ -110,9 +114,10 @@ export function registerPlaylistTools(server: McpServer): void {
         const cached = getCached("playlists.list", cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const result = await listPlaylists(yt, params);
+        const result = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return listPlaylists(yt, params);
+        });
         trackQuota("playlists.list", QUOTA_COSTS["playlists.list"]);
         setCached("playlists.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["playlists.list"] ?? 1) });
@@ -128,9 +133,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Add a video to a playlist at an optional position.", inputSchema: AddVideoToPlaylistSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const item = await addVideoToPlaylist(yt, params.playlistId, params.videoId, params.position);
+        const item = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return addVideoToPlaylist(yt, params.playlistId, params.videoId, params.position);
+        });
         trackQuota("playlistItems.insert", QUOTA_COSTS["playlistItems.insert"]);
         invalidateRelated("playlistItems.insert");
         return toolResult({ success: true, data: item, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.insert"] ?? 50) });
@@ -146,9 +152,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Remove a video from a playlist using the playlistItem ID (not the video ID).", inputSchema: RemoveVideoFromPlaylistSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        await removeVideoFromPlaylist(yt, params.playlistItemId);
+        await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          await removeVideoFromPlaylist(yt, params.playlistItemId);
+        });
         trackQuota("playlistItems.delete", QUOTA_COSTS["playlistItems.delete"]);
         invalidateRelated("playlistItems.delete");
         return toolResult({ success: true, data: { deleted: params.playlistItemId }, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.delete"] ?? 50) });
@@ -164,9 +171,10 @@ export function registerPlaylistTools(server: McpServer): void {
     { description: "Move a playlist item to a new position within the playlist.", inputSchema: ReorderPlaylistItemSchema },
     async (params) => {
       try {
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const item = await reorderPlaylistItem(yt, params.playlistItemId, params.playlistId, params.newPosition);
+        const item = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return reorderPlaylistItem(yt, params.playlistItemId, params.playlistId, params.newPosition);
+        });
         trackQuota("playlistItems.update", QUOTA_COSTS["playlistItems.update"]);
         invalidateRelated("playlistItems.update");
         return toolResult({ success: true, data: item, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.update"] ?? 50) });
@@ -186,9 +194,10 @@ export function registerPlaylistTools(server: McpServer): void {
         const cached = getCached("playlistItems.list", cacheKey);
         if (cached) return toolResult({ success: true, data: cached, quota: getQuotaSummary(0), cached: true });
 
-        const auth = await getAuthClient();
-        const yt = buildYouTubeClient(auth);
-        const result = await listPlaylistItems(yt, params.playlistId, params);
+        const result = await withAuthRetry(async (auth) => {
+          const yt = buildYouTubeClient(auth);
+          return listPlaylistItems(yt, params.playlistId, params);
+        });
         trackQuota("playlistItems.list", QUOTA_COSTS["playlistItems.list"]);
         setCached("playlistItems.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.list"] ?? 1) });
