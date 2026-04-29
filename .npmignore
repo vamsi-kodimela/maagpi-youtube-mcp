@@ -1,0 +1,17 @@
+src/
+tests/
+docs/
+*.test.ts
+*.spec.ts
+tsconfig*.json
+tsup.config.ts
+vitest.config.ts
+.env
+.env.*
+!.env.example
+.eslintrc*
+.eslintignore
+.prettierrc*
+*.log
+.nyc_output/
+coverage/
