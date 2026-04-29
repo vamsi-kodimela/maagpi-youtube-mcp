@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "youtube-mcp"
+  ],
+  "enableAllProjectMcpServers": true
+}
