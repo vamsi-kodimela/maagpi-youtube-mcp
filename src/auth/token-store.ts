@@ -5,7 +5,7 @@ const TOKEN_KEY = "tokens";
 const EXPIRY_BUFFER_MS = 60_000;
 
 const store = new Conf<{ tokens?: StoredTokens }>({
-  projectName: "youtube-mcp",
+  projectName: "maagpi-youtube-mcp",
   projectVersion: "1",
 });
 

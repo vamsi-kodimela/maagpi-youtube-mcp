@@ -1,6 +1,6 @@
 {
   "enabledMcpjsonServers": [
-    "youtube-mcp"
+    "maagpi-youtube-mcp"
   ],
   "enableAllProjectMcpServers": true
 }

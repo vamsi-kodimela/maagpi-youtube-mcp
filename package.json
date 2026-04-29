@@ -1,5 +1,5 @@
 {
-  "name": "youtube-mcp",
+  "name": "maagpi-youtube-mcp",
   "version": "0.1.0",
   "description": "YouTube Data API v3 + Analytics API MCP server — full channel management for AI agents",
   "type": "module",
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "youtube-mcp": "./dist/index.js"
+    "maagpi-youtube-mcp": "./dist/index.js"
   },
   "files": [
     "dist"

@@ -1,4 +1,4 @@
-# youtube-mcp
+# maagpi-youtube-mcp
 
 YouTube Data API v3 + Analytics API MCP server. Full channel management for AI agents and developers — upload videos, schedule publishing, query analytics, moderate comments, manage playlists, and update channel branding.
 
@@ -49,7 +49,7 @@ Edit `~/.claude/settings.json`:
   "mcpServers": {
     "youtube": {
       "command": "npx",
-      "args": ["youtube-mcp"],
+      "args": ["maagpi-youtube-mcp"],
       "env": {
         "YOUTUBE_CLIENT_ID": "your_client_id",
         "YOUTUBE_CLIENT_SECRET": "your_client_secret"
@@ -341,10 +341,10 @@ featuring playlist PLxxxxx
 
 ```bash
 # stdio (default — for Claude Code / Claude Desktop)
-YOUTUBE_MCP_TRANSPORT=stdio npx youtube-mcp
+YOUTUBE_MCP_TRANSPORT=stdio npx maagpi-youtube-mcp
 
 # HTTP (for multi-client or remote access)
-YOUTUBE_MCP_TRANSPORT=http YOUTUBE_MCP_HTTP_PORT=3000 npx youtube-mcp
+YOUTUBE_MCP_TRANSPORT=http YOUTUBE_MCP_HTTP_PORT=3000 npx maagpi-youtube-mcp
 # MCP endpoint: POST http://127.0.0.1:3000/mcp
 # Health check:  GET  http://127.0.0.1:3000/health
 ```
