@@ -20,6 +20,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/index.ts",
+    "auth": "tsx --env-file=.env scripts/auth.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

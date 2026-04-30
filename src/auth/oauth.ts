@@ -119,11 +119,23 @@ async function runOAuthFlow(): Promise<OAuth2Client> {
   return client;
 }
 
+function hasSufficientScopes(stored: StoredTokens): boolean {
+  if (!stored.scope) return false;
+  const grantedScopes = stored.scope.split(" ");
+  return SCOPES.every((s) => grantedScopes.includes(s));
+}
+
 export async function createAuthenticatedClient(): Promise<OAuth2Client> {
   const stored = tokenStore.get();
 
   if (!stored) {
     logger.info("No stored tokens found. Starting OAuth flow...");
+    return runOAuthFlow();
+  }
+
+  if (!hasSufficientScopes(stored)) {
+    logger.info("Stored token is missing required scopes. Re-authenticating...");
+    tokenStore.clear();
     return runOAuthFlow();
   }
 
