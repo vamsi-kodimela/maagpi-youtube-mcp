@@ -30,7 +30,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const playlist = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return createPlaylist(yt, params);
-        });
+        }, params.channel);
         trackQuota("playlists.insert", QUOTA_COSTS["playlists.insert"]);
         invalidateRelated("playlists.insert");
         return toolResult({ success: true, data: playlist, quota: getQuotaSummary(QUOTA_COSTS["playlists.insert"] ?? 50) });
@@ -49,7 +49,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const playlist = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return updatePlaylist(yt, params.playlistId, params);
-        });
+        }, params.channel);
         trackQuota("playlists.update", QUOTA_COSTS["playlists.update"]);
         invalidateRelated("playlists.update");
         return toolResult({ success: true, data: playlist, quota: getQuotaSummary(QUOTA_COSTS["playlists.update"] ?? 50) });
@@ -68,7 +68,7 @@ export function registerPlaylistTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await deletePlaylist(yt, params.playlistId);
-        });
+        }, params.channel);
         trackQuota("playlists.delete", QUOTA_COSTS["playlists.delete"]);
         invalidateRelated("playlists.delete");
         return toolResult({ success: true, data: { deleted: params.playlistId }, quota: getQuotaSummary(QUOTA_COSTS["playlists.delete"] ?? 50) });
@@ -91,7 +91,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const playlist = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return getPlaylist(yt, params.playlistId, params.parts as string[] | undefined);
-        });
+        }, params.channel);
         if (!playlist) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.PLAYLIST_NOT_FOUND, `Playlist '${params.playlistId}' not found.`);
         }
@@ -117,7 +117,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const result = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return listPlaylists(yt, params);
-        });
+        }, params.channel);
         trackQuota("playlists.list", QUOTA_COSTS["playlists.list"]);
         setCached("playlists.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["playlists.list"] ?? 1) });
@@ -136,7 +136,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const item = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return addVideoToPlaylist(yt, params.playlistId, params.videoId, params.position);
-        });
+        }, params.channel);
         trackQuota("playlistItems.insert", QUOTA_COSTS["playlistItems.insert"]);
         invalidateRelated("playlistItems.insert");
         return toolResult({ success: true, data: item, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.insert"] ?? 50) });
@@ -155,7 +155,7 @@ export function registerPlaylistTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await removeVideoFromPlaylist(yt, params.playlistItemId);
-        });
+        }, params.channel);
         trackQuota("playlistItems.delete", QUOTA_COSTS["playlistItems.delete"]);
         invalidateRelated("playlistItems.delete");
         return toolResult({ success: true, data: { deleted: params.playlistItemId }, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.delete"] ?? 50) });
@@ -174,7 +174,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const item = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return reorderPlaylistItem(yt, params.playlistItemId, params.playlistId, params.newPosition);
-        });
+        }, params.channel);
         trackQuota("playlistItems.update", QUOTA_COSTS["playlistItems.update"]);
         invalidateRelated("playlistItems.update");
         return toolResult({ success: true, data: item, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.update"] ?? 50) });
@@ -197,7 +197,7 @@ export function registerPlaylistTools(server: McpServer): void {
         const result = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return listPlaylistItems(yt, params.playlistId, params);
-        });
+        }, params.channel);
         trackQuota("playlistItems.list", QUOTA_COSTS["playlistItems.list"]);
         setCached("playlistItems.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["playlistItems.list"] ?? 1) });

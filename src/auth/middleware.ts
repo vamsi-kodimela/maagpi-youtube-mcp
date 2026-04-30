@@ -4,25 +4,35 @@ import { tokenStore } from "./token-store.js";
 import { YouTubeMcpError } from "../errors/types.js";
 import { YouTubeMcpErrorCode } from "../errors/codes.js";
 
-let _client: OAuth2Client | null = null;
+const _clients = new Map<string, OAuth2Client>();
 
-export async function getAuthClient(): Promise<OAuth2Client> {
-  const stored = tokenStore.get();
-  if (_client && stored && tokenStore.isExpired(stored)) {
-    _client = null;
+export async function getAuthClient(channel?: string): Promise<OAuth2Client> {
+  const profileName = channel ?? tokenStore.getActiveProfileName();
+  const stored = tokenStore.get(profileName);
+  if (_clients.has(profileName) && stored && tokenStore.isExpired(stored)) {
+    _clients.delete(profileName);
   }
-  if (!_client) {
-    _client = await createAuthenticatedClient();
+  if (!_clients.has(profileName)) {
+    const client = await createAuthenticatedClient(profileName);
+    _clients.set(profileName, client);
   }
-  return _client;
+  return _clients.get(profileName)!;
 }
 
-export function resetAuthClient(): void {
-  _client = null;
+export function resetAuthClient(channel?: string): void {
+  if (channel) {
+    _clients.delete(channel);
+  } else {
+    _clients.delete(tokenStore.getActiveProfileName());
+  }
 }
 
-export async function withAuthRetry<T>(fn: (auth: OAuth2Client) => Promise<T>): Promise<T> {
-  const auth = await getAuthClient();
+export function resetAllAuthClients(): void {
+  _clients.clear();
+}
+
+export async function withAuthRetry<T>(fn: (auth: OAuth2Client) => Promise<T>, channel?: string): Promise<T> {
+  const auth = await getAuthClient(channel);
   try {
     return await fn(auth);
   } catch (err) {
@@ -31,8 +41,8 @@ export async function withAuthRetry<T>(fn: (auth: OAuth2Client) => Promise<T>): 
       (err.code === YouTubeMcpErrorCode.AUTH_TOKEN_EXPIRED ||
         err.code === YouTubeMcpErrorCode.AUTH_REQUIRED)
     ) {
-      resetAuthClient();
-      const freshAuth = await getAuthClient();
+      resetAuthClient(channel);
+      const freshAuth = await getAuthClient(channel);
       return fn(freshAuth);
     }
     throw err;

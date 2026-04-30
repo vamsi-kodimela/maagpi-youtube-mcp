@@ -33,7 +33,7 @@ export function registerCommentTools(server: McpServer): void {
         const result = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return listCommentThreads(yt, params.videoId, params);
-        });
+        }, params.channel);
         trackQuota("commentThreads.list", QUOTA_COSTS["commentThreads.list"]);
         setCached("commentThreads.list", cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["commentThreads.list"] ?? 1) });
@@ -52,7 +52,7 @@ export function registerCommentTools(server: McpServer): void {
         const thread = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return getCommentThread(yt, params.commentThreadId, params.maxReplies);
-        });
+        }, params.channel);
         if (!thread) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.COMMENT_NOT_FOUND, `Comment thread '${params.commentThreadId}' not found.`);
         }
@@ -73,7 +73,7 @@ export function registerCommentTools(server: McpServer): void {
         const comment = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return replyToComment(yt, params.parentCommentId, params.text);
-        });
+        }, params.channel);
         trackQuota("comments.insert", QUOTA_COSTS["comments.insert"]);
         invalidateRelated("comments.insert");
         return toolResult({ success: true, data: comment, quota: getQuotaSummary(QUOTA_COSTS["comments.insert"] ?? 50) });
@@ -92,7 +92,7 @@ export function registerCommentTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await deleteComment(yt, params.commentId);
-        });
+        }, params.channel);
         trackQuota("comments.delete", QUOTA_COSTS["comments.delete"]);
         invalidateRelated("comments.delete");
         return toolResult({ success: true, data: { deleted: params.commentId }, quota: getQuotaSummary(QUOTA_COSTS["comments.delete"] ?? 50) });
@@ -111,7 +111,7 @@ export function registerCommentTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await moderateComment(yt, params.commentId, params.moderationStatus, params.banAuthor);
-        });
+        }, params.channel);
         trackQuota("comments.setModerationStatus", QUOTA_COSTS["comments.setModerationStatus"]);
         invalidateRelated("comments.setModerationStatus");
         return toolResult({ success: true, data: { commentId: params.commentId, moderationStatus: params.moderationStatus }, quota: getQuotaSummary(QUOTA_COSTS["comments.setModerationStatus"] ?? 50) });

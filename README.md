@@ -1,11 +1,12 @@
 # maagpi-youtube-mcp
 
-YouTube Data API v3 + Analytics API MCP server. Full channel management for AI agents and developers — upload videos, schedule publishing, query analytics, moderate comments, manage playlists, and update channel branding.
+YouTube Data API v3 + Analytics API MCP server. Full channel management for AI agents and developers — upload videos, schedule publishing, query analytics, moderate comments, manage playlists, update channel branding, and manage **multiple YouTube channels simultaneously**.
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Usage Guide](#usage-guide)
+  - [Multiple Channels](#multiple-channels)
   - [Videos](#videos)
   - [Scheduling & Publishing](#scheduling--publishing)
   - [Analytics](#analytics)
@@ -59,7 +60,9 @@ Edit `~/.claude/settings.json`:
 }
 ```
 
-**First run:** When you call any tool for the first time, a browser window opens for Google OAuth consent. Approve it, and tokens are saved automatically to your OS config directory. All subsequent calls reuse the stored tokens and auto-refresh them.
+**First run:** When you call any tool for the first time, a browser window opens for Google OAuth consent. Approve it, and tokens are saved automatically to your OS config directory under the `"default"` profile. All subsequent calls reuse the stored tokens and auto-refresh them.
+
+**Adding more channels:** Use `youtube_account_add` at any time to connect additional YouTube accounts — see [Multiple Channels](#multiple-channels) below.
 
 ---
 
@@ -67,12 +70,69 @@ Edit `~/.claude/settings.json`:
 
 All examples below are natural language prompts you can send to Claude once the MCP server is connected.
 
+---
+
+### Multiple Channels
+
+You can connect multiple YouTube accounts and target any of them from any tool using the optional `channel` parameter. No switching required — all channels are usable simultaneously.
+
+**Connect a second channel**
+```
+Add a new YouTube channel profile named "gaming"
+```
+> A browser window opens for the second account's OAuth consent. Tokens are saved under the `"gaming"` profile.
+
+**List all connected channels**
+```
+List all my connected YouTube channel profiles
+```
+
+**Use a specific channel in any tool**
+```
+Get channel details for my "gaming" profile
+```
+```
+Upload /videos/clip.mp4 to my "gaming" channel with title "Let's Play Episode 1", set to unlisted
+```
+```
+Get top 5 videos by views in Q1 2025 for my "main" channel,
+and also get the top 5 for my "gaming" channel
+```
+
+**Switch the default channel**
+```
+Switch my active YouTube profile to "gaming"
+```
+> After switching, all tools without an explicit `channel` parameter use the new active profile.
+
+**Show current active channel**
+```
+Which YouTube channel am I currently working with?
+```
+
+**Remove a channel**
+```
+Remove the "old-channel" profile (confirmed)
+```
+
+**CLI: authenticate a named profile**
+```bash
+npm run auth -- --channel gaming
+```
+
+---
+
 ### Videos
 
 **Upload a video**
 ```
 Upload /Users/me/videos/tutorial.mp4 with title "Getting Started with TypeScript",
 description "A beginner's guide", tags ["typescript", "programming"], set it to unlisted.
+```
+
+**Upload to a specific channel**
+```
+Upload /Users/me/videos/clip.mp4 to my "gaming" channel, title "Let's Play EP1", public
 ```
 
 **Get video details**
@@ -143,6 +203,12 @@ from 2025-01-01 to 2025-01-31
 ```
 Show me channel views, subscribersGained, and estimatedRevenue
 for the last 30 days (2025-01-01 to 2025-01-31)
+```
+
+**Compare two channels**
+```
+Get views and subscribersGained for Jan 2025 on my "main" channel,
+and also for my "gaming" channel
 ```
 
 **Top performing videos**
@@ -274,66 +340,77 @@ featuring playlist PLxxxxx
 
 ## Tools Reference
 
+> All tools accept an optional `channel` parameter (profile name). Omit it to use the active profile.
+
+### Account Management
+| Tool | Key Parameters | Description |
+|---|---|---|
+| `youtube_account_add` | `name` | Connect a new YouTube channel via OAuth, saved as a named profile |
+| `youtube_account_list` | — | List all connected channel profiles with their IDs and active status |
+| `youtube_account_switch` | `name` | Set the default active profile (used when `channel` is omitted) |
+| `youtube_account_current` | — | Show the currently active profile |
+| `youtube_account_remove` | `name`, `confirm: true` | Disconnect and remove a channel profile |
+
 ### Video Management
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_video_upload` | `filePath`, `title`, `privacyStatus` | 1600 |
-| `youtube_video_get` | `videoId`, `parts?` | 1 |
-| `youtube_video_list` | `channelId?`, `query?`, `order?`, `maxResults?` | 1 |
-| `youtube_video_update` | `videoId`, `title?`, `description?`, `tags?` | 50 |
-| `youtube_video_delete` | `videoId`, `confirm: true` | 50 |
-| `youtube_video_rate` | `videoId`, `rating` (like/dislike/none) | 50 |
-| `youtube_video_set_thumbnail` | `videoId`, `thumbnailPath` | 50 |
+| `youtube_video_upload` | `filePath`, `title`, `privacyStatus`, `channel?` | 1600 |
+| `youtube_video_get` | `videoId`, `parts?`, `channel?` | 1 |
+| `youtube_video_list` | `channelId?`, `query?`, `order?`, `maxResults?`, `channel?` | 1 |
+| `youtube_video_update` | `videoId`, `title?`, `description?`, `tags?`, `channel?` | 50 |
+| `youtube_video_delete` | `videoId`, `confirm: true`, `channel?` | 50 |
+| `youtube_video_rate` | `videoId`, `rating` (like/dislike/none), `channel?` | 50 |
+| `youtube_video_set_thumbnail` | `videoId`, `thumbnailPath`, `channel?` | 50 |
 
 ### Scheduling & Publishing
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_video_set_privacy` | `videoId`, `privacyStatus` | 50 |
-| `youtube_video_schedule_publish` | `videoId`, `publishAt` (ISO8601 future) | 50 |
-| `youtube_video_set_premiere` | `videoId`, `premiereAt` (ISO8601 future) | 50 |
+| `youtube_video_set_privacy` | `videoId`, `privacyStatus`, `channel?` | 50 |
+| `youtube_video_schedule_publish` | `videoId`, `publishAt` (ISO8601 future), `channel?` | 50 |
+| `youtube_video_set_premiere` | `videoId`, `premiereAt` (ISO8601 future), `channel?` | 50 |
 
 ### Analytics
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_analytics_video_metrics` | `videoId`, `startDate`, `endDate`, `metrics[]` | 1 |
-| `youtube_analytics_channel_metrics` | `startDate`, `endDate`, `metrics[]` | 1 |
-| `youtube_analytics_top_videos` | `startDate`, `endDate`, `metric`, `maxResults?` | 1 |
-| `youtube_analytics_audience_retention` | `videoId`, `startDate`, `endDate` | 1 |
-| `youtube_analytics_revenue_report` | `startDate`, `endDate`, `dimensions?` | 1 |
+| `youtube_analytics_video_metrics` | `videoId`, `startDate`, `endDate`, `metrics[]`, `channel?` | 1 |
+| `youtube_analytics_channel_metrics` | `startDate`, `endDate`, `metrics[]`, `channel?` | 1 |
+| `youtube_analytics_top_videos` | `startDate`, `endDate`, `metric`, `maxResults?`, `channel?` | 1 |
+| `youtube_analytics_audience_retention` | `videoId`, `startDate`, `endDate`, `channel?` | 1 |
+| `youtube_analytics_revenue_report` | `startDate`, `endDate`, `dimensions?`, `channel?` | 1 |
 
 ### Comments
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_comment_list` | `videoId`, `maxResults?`, `order?`, `searchTerms?` | 1 |
-| `youtube_comment_thread_get` | `commentThreadId`, `maxReplies?` | 1 |
-| `youtube_comment_reply` | `parentCommentId`, `text` | 50 |
-| `youtube_comment_delete` | `commentId` | 50 |
-| `youtube_comment_moderate` | `commentId`, `moderationStatus`, `banAuthor?` | 50 |
+| `youtube_comment_list` | `videoId`, `maxResults?`, `order?`, `searchTerms?`, `channel?` | 1 |
+| `youtube_comment_thread_get` | `commentThreadId`, `maxReplies?`, `channel?` | 1 |
+| `youtube_comment_reply` | `parentCommentId`, `text`, `channel?` | 50 |
+| `youtube_comment_delete` | `commentId`, `channel?` | 50 |
+| `youtube_comment_moderate` | `commentId`, `moderationStatus`, `banAuthor?`, `channel?` | 50 |
 
 ### Playlists
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_playlist_create` | `title`, `privacyStatus` | 50 |
-| `youtube_playlist_update` | `playlistId`, `title?`, `description?` | 50 |
-| `youtube_playlist_delete` | `playlistId`, `confirm: true` | 50 |
-| `youtube_playlist_get` | `playlistId` | 1 |
-| `youtube_playlist_list` | `channelId?`, `maxResults?` | 1 |
-| `youtube_playlist_item_add` | `playlistId`, `videoId`, `position?` | 50 |
-| `youtube_playlist_item_remove` | `playlistItemId` | 50 |
-| `youtube_playlist_item_reorder` | `playlistItemId`, `playlistId`, `newPosition` | 50 |
-| `youtube_playlist_items_list` | `playlistId`, `maxResults?` | 1 |
+| `youtube_playlist_create` | `title`, `privacyStatus`, `channel?` | 50 |
+| `youtube_playlist_update` | `playlistId`, `title?`, `description?`, `channel?` | 50 |
+| `youtube_playlist_delete` | `playlistId`, `confirm: true`, `channel?` | 50 |
+| `youtube_playlist_get` | `playlistId`, `channel?` | 1 |
+| `youtube_playlist_list` | `channelId?`, `maxResults?`, `channel?` | 1 |
+| `youtube_playlist_item_add` | `playlistId`, `videoId`, `position?`, `channel?` | 50 |
+| `youtube_playlist_item_remove` | `playlistItemId`, `channel?` | 50 |
+| `youtube_playlist_item_reorder` | `playlistItemId`, `playlistId`, `newPosition`, `channel?` | 50 |
+| `youtube_playlist_items_list` | `playlistId`, `maxResults?`, `channel?` | 1 |
 
 ### Channel Management
 | Tool | Key Parameters | Quota Cost |
 |---|---|---|
-| `youtube_channel_get` | `parts?` | 1 |
-| `youtube_channel_update` | `title?`, `description?`, `keywords?`, `country?` | 50 |
-| `youtube_channel_branding_update` | `showRelatedChannels?`, `featuredChannelsTitle?` | 50 |
-| `youtube_channel_watermark_set` | `channelId`, `imagePath`, `position`, `timing` | 50 |
-| `youtube_channel_watermark_unset` | `channelId` | 50 |
-| `youtube_channel_section_list` | `channelId?` | 1 |
-| `youtube_channel_section_create` | `type`, `title?`, `playlistIds?` | 50 |
-| `youtube_channel_section_delete` | `sectionId` | 50 |
+| `youtube_channel_get` | `parts?`, `channel?` | 1 |
+| `youtube_channel_update` | `title?`, `description?`, `keywords?`, `country?`, `channel?` | 50 |
+| `youtube_channel_branding_update` | `showRelatedChannels?`, `featuredChannelsTitle?`, `channel?` | 50 |
+| `youtube_channel_watermark_set` | `channelId`, `imagePath`, `position`, `timing`, `channel?` | 50 |
+| `youtube_channel_watermark_unset` | `channelId`, `channel?` | 50 |
+| `youtube_channel_section_list` | `channelId?`, `channel?` | 1 |
+| `youtube_channel_section_create` | `type`, `title?`, `playlistIds?`, `channel?` | 50 |
+| `youtube_channel_section_delete` | `sectionId`, `channel?` | 50 |
 
 ---
 
@@ -423,6 +500,8 @@ All errors are returned as structured tool content — AI agents can read and ac
 ```bash
 npm install
 npm run dev          # run with tsx (requires .env)
+npm run auth         # authenticate the default channel profile
+npm run auth -- --channel gaming   # authenticate a named channel profile
 npm run typecheck    # tsc --noEmit
 npm test             # vitest unit tests (41 tests, no network)
 npm run build        # production bundle → dist/index.js

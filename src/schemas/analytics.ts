@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format");
+const channel = z.string().optional().describe("Channel profile name. Defaults to active profile.");
 
 const videoMetrics = z.array(
   z.enum([
@@ -32,6 +33,7 @@ export const VideoMetricsSchema = z.object({
   endDate: dateString,
   metrics: videoMetrics.min(1),
   dimensions: z.array(z.string()).optional(),
+  channel,
 });
 
 export const ChannelMetricsSchema = z.object({
@@ -41,6 +43,7 @@ export const ChannelMetricsSchema = z.object({
   dimensions: z.array(z.string()).optional(),
   filters: z.string().optional(),
   maxResults: z.number().int().min(1).max(200).optional(),
+  channel,
 });
 
 export const TopVideosSchema = z.object({
@@ -49,16 +52,19 @@ export const TopVideosSchema = z.object({
   metric: z.string().min(1),
   maxResults: z.number().int().min(1).max(200).default(10),
   filters: z.string().optional(),
+  channel,
 });
 
 export const AudienceRetentionSchema = z.object({
   videoId: z.string().min(1),
   startDate: dateString,
   endDate: dateString,
+  channel,
 });
 
 export const RevenueReportSchema = z.object({
   startDate: dateString,
   endDate: dateString,
   dimensions: z.array(z.string()).optional(),
+  channel,
 });

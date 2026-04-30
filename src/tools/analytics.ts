@@ -39,7 +39,7 @@ export function registerAnalyticsTools(server: McpServer): void {
             analytics, params.videoId, params.startDate, params.endDate,
             params.metrics as string[], params.dimensions as string[] | undefined
           );
-        });
+        }, params.channel);
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -66,7 +66,7 @@ export function registerAnalyticsTools(server: McpServer): void {
             params.metrics as string[], params.dimensions as string[] | undefined,
             params.filters, params.maxResults
           );
-        });
+        }, params.channel);
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -91,7 +91,7 @@ export function registerAnalyticsTools(server: McpServer): void {
           return queryTopVideos(
             analytics, params.startDate, params.endDate, params.metric, params.maxResults, params.filters
           );
-        });
+        }, params.channel);
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -116,7 +116,7 @@ export function registerAnalyticsTools(server: McpServer): void {
           return queryAudienceRetention(
             analytics, params.videoId, params.startDate, params.endDate
           );
-        });
+        }, params.channel);
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });
@@ -141,7 +141,7 @@ export function registerAnalyticsTools(server: McpServer): void {
           return queryRevenueReport(
             analytics, params.startDate, params.endDate, params.dimensions as string[] | undefined
           );
-        });
+        }, params.channel);
         trackQuota(ANALYTICS_METHOD, COST);
         setCached(ANALYTICS_METHOD, cacheKey, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(COST) });

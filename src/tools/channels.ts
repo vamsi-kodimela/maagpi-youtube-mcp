@@ -34,7 +34,7 @@ export function registerChannelTools(server: McpServer): void {
         const channel = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return getChannel(yt, params.parts as string[] | undefined);
-        });
+        }, params.channel);
         if (!channel) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.CHANNEL_NOT_FOUND, "No channel found for the authenticated account.");
         }
@@ -56,7 +56,7 @@ export function registerChannelTools(server: McpServer): void {
         const channel = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return updateChannel(yt, params);
-        });
+        }, params.channel);
         trackQuota("channels.update", QUOTA_COSTS["channels.update"]);
         invalidateRelated("channels.update");
         return toolResult({ success: true, data: channel, quota: getQuotaSummary(QUOTA_COSTS["channels.update"] ?? 50) });
@@ -79,7 +79,7 @@ export function registerChannelTools(server: McpServer): void {
             throw new YouTubeMcpError(YouTubeMcpErrorCode.CHANNEL_NOT_FOUND, "No channel found.");
           }
           return updateBranding(yt, channel.id, params);
-        });
+        }, params.channel);
         trackQuota("channels.update", QUOTA_COSTS["channels.update"]);
         invalidateRelated("channels.update");
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["channels.update"] ?? 50) });
@@ -98,7 +98,7 @@ export function registerChannelTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await setWatermark(yt, params.channelId, params.imagePath, params.position, params.timing);
-        });
+        }, params.channel);
         trackQuota("watermarks.set", QUOTA_COSTS["watermarks.set"]);
         return toolResult({ success: true, data: { channelId: params.channelId, watermarkSet: true }, quota: getQuotaSummary(QUOTA_COSTS["watermarks.set"] ?? 50) });
       } catch (err) {
@@ -116,7 +116,7 @@ export function registerChannelTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await unsetWatermark(yt, params.channelId);
-        });
+        }, params.channel);
         trackQuota("watermarks.unset", QUOTA_COSTS["watermarks.unset"]);
         return toolResult({ success: true, data: { channelId: params.channelId, watermarkRemoved: true }, quota: getQuotaSummary(QUOTA_COSTS["watermarks.unset"] ?? 50) });
       } catch (err) {
@@ -138,7 +138,7 @@ export function registerChannelTools(server: McpServer): void {
         const sections = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return listChannelSections(yt, params.channelId);
-        });
+        }, params.channel);
         trackQuota("channelSections.list", QUOTA_COSTS["channelSections.list"]);
         setCached("channelSections.list", cacheKey, sections);
         return toolResult({ success: true, data: sections, quota: getQuotaSummary(QUOTA_COSTS["channelSections.list"] ?? 1) });
@@ -157,7 +157,7 @@ export function registerChannelTools(server: McpServer): void {
         const section = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return createChannelSection(yt, params);
-        });
+        }, params.channel);
         trackQuota("channelSections.insert", QUOTA_COSTS["channelSections.insert"]);
         invalidateRelated("channelSections.insert");
         return toolResult({ success: true, data: section, quota: getQuotaSummary(QUOTA_COSTS["channelSections.insert"] ?? 50) });
@@ -176,7 +176,7 @@ export function registerChannelTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await deleteChannelSection(yt, params.sectionId);
-        });
+        }, params.channel);
         trackQuota("channelSections.delete", QUOTA_COSTS["channelSections.delete"]);
         invalidateRelated("channelSections.delete");
         return toolResult({ success: true, data: { deleted: params.sectionId }, quota: getQuotaSummary(QUOTA_COSTS["channelSections.delete"] ?? 50) });

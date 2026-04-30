@@ -31,7 +31,7 @@ export function registerVideoTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return uploadVideo(yt, params);
-        });
+        }, params.channel);
         trackQuota("videos.insert", QUOTA_COSTS["videos.insert"]);
         invalidateRelated("videos.insert");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.insert"] ?? 1600) });
@@ -56,7 +56,7 @@ export function registerVideoTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return getVideo(yt, params.videoId, params.parts as string[] | undefined);
-        });
+        }, params.channel);
 
         if (!video) {
           throw new YouTubeMcpError(YouTubeMcpErrorCode.VIDEO_NOT_FOUND, `Video '${params.videoId}' not found.`, {
@@ -82,7 +82,7 @@ export function registerVideoTools(server: McpServer): void {
         const result = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return listVideos(yt, params);
-        });
+        }, params.channel);
         trackQuota("videos.list", QUOTA_COSTS["videos.list"]);
         setCached("videos.list", params as Record<string, unknown>, result);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["videos.list"] ?? 1) });
@@ -101,7 +101,7 @@ export function registerVideoTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return updateVideo(yt, params);
-        });
+        }, params.channel);
         trackQuota("videos.update", QUOTA_COSTS["videos.update"]);
         invalidateRelated("videos.update");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.update"] ?? 50) });
@@ -120,7 +120,7 @@ export function registerVideoTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await deleteVideo(yt, params.videoId);
-        });
+        }, params.channel);
         trackQuota("videos.delete", QUOTA_COSTS["videos.delete"]);
         invalidateRelated("videos.delete");
         return toolResult({ success: true, data: { deleted: params.videoId }, quota: getQuotaSummary(QUOTA_COSTS["videos.delete"] ?? 50) });
@@ -139,7 +139,7 @@ export function registerVideoTools(server: McpServer): void {
         await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           await rateVideo(yt, params.videoId, params.rating);
-        });
+        }, params.channel);
         trackQuota("videos.rate", QUOTA_COSTS["videos.rate"]);
         return toolResult({ success: true, data: { videoId: params.videoId, rating: params.rating }, quota: getQuotaSummary(QUOTA_COSTS["videos.rate"] ?? 50) });
       } catch (err) {
@@ -157,7 +157,7 @@ export function registerVideoTools(server: McpServer): void {
         const result = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return setThumbnail(yt, params.videoId, params.thumbnailPath);
-        });
+        }, params.channel);
         trackQuota("thumbnails.set", QUOTA_COSTS["thumbnails.set"]);
         return toolResult({ success: true, data: result, quota: getQuotaSummary(QUOTA_COSTS["thumbnails.set"] ?? 50) });
       } catch (err) {

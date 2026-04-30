@@ -5,6 +5,7 @@ import { registerAnalyticsTools } from "./analytics.js";
 import { registerCommentTools } from "./comments.js";
 import { registerPlaylistTools } from "./playlists.js";
 import { registerChannelTools } from "./channels.js";
+import { registerAccountTools } from "./account.js";
 
 export function registerAllTools(server: McpServer): void {
   registerVideoTools(server);
@@ -13,4 +14,5 @@ export function registerAllTools(server: McpServer): void {
   registerCommentTools(server);
   registerPlaylistTools(server);
   registerChannelTools(server);
+  registerAccountTools(server);
 }

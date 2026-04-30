@@ -27,7 +27,7 @@ function buildOAuth2Client(redirectUri?: string): OAuth2Client {
   });
 }
 
-function wireTokenPersistence(client: OAuth2Client, existing: StoredTokens): void {
+function wireTokenPersistence(client: OAuth2Client, existing: StoredTokens, profileName: string): void {
   client.on("tokens", (tokens) => {
     const updated: StoredTokens = {
       ...existing,
@@ -36,11 +36,11 @@ function wireTokenPersistence(client: OAuth2Client, existing: StoredTokens): voi
       stored_at: Date.now(),
       ...(tokens.refresh_token ? { refresh_token: tokens.refresh_token } : {}),
     };
-    tokenStore.set(updated);
+    tokenStore.set(updated, profileName);
   });
 }
 
-async function runOAuthFlow(): Promise<OAuth2Client> {
+async function runOAuthFlow(profileName: string): Promise<OAuth2Client> {
   const port = await getPort({ port: [8080, 8081, 8082, 9090, 9091] });
   const redirectUri = `http://127.0.0.1:${port}/oauth/callback`;
   const client = buildOAuth2Client(redirectUri);
@@ -74,7 +74,7 @@ async function runOAuthFlow(): Promise<OAuth2Client> {
     });
 
     server.listen(port, "127.0.0.1", () => {
-      logger.info("YouTube MCP: Opening browser for OAuth authentication...");
+      logger.info(`YouTube MCP: Opening browser for OAuth authentication (profile: ${profileName})...`);
       logger.info(`Auth URL: ${authUrl}`);
 
       open(authUrl).catch(() => {
@@ -110,11 +110,11 @@ async function runOAuthFlow(): Promise<OAuth2Client> {
     stored_at: Date.now(),
   };
 
-  tokenStore.set(stored);
-  logger.info(`Tokens saved to: ${tokenStore.configPath()}`);
+  tokenStore.set(stored, profileName);
+  logger.info(`Tokens saved to: ${tokenStore.configPath()} (profile: ${profileName})`);
 
   client.setCredentials(tokens);
-  wireTokenPersistence(client, stored);
+  wireTokenPersistence(client, stored, profileName);
 
   return client;
 }
@@ -125,18 +125,19 @@ function hasSufficientScopes(stored: StoredTokens): boolean {
   return SCOPES.every((s) => grantedScopes.includes(s));
 }
 
-export async function createAuthenticatedClient(): Promise<OAuth2Client> {
-  const stored = tokenStore.get();
+export async function createAuthenticatedClient(profileName?: string): Promise<OAuth2Client> {
+  const resolvedProfile = profileName ?? tokenStore.getActiveProfileName();
+  const stored = tokenStore.get(resolvedProfile);
 
   if (!stored) {
-    logger.info("No stored tokens found. Starting OAuth flow...");
-    return runOAuthFlow();
+    logger.info(`No stored tokens found for profile "${resolvedProfile}". Starting OAuth flow...`);
+    return runOAuthFlow(resolvedProfile);
   }
 
   if (!hasSufficientScopes(stored)) {
-    logger.info("Stored token is missing required scopes. Re-authenticating...");
-    tokenStore.clear();
-    return runOAuthFlow();
+    logger.info(`Profile "${resolvedProfile}" token is missing required scopes. Re-authenticating...`);
+    tokenStore.clear(resolvedProfile);
+    return runOAuthFlow(resolvedProfile);
   }
 
   const client = buildOAuth2Client();
@@ -147,10 +148,10 @@ export async function createAuthenticatedClient(): Promise<OAuth2Client> {
     token_type: stored.token_type,
   });
 
-  wireTokenPersistence(client, stored);
+  wireTokenPersistence(client, stored, resolvedProfile);
 
   if (tokenStore.isExpired(stored)) {
-    logger.info("Access token expired, refreshing...");
+    logger.info(`Access token expired for profile "${resolvedProfile}", refreshing...`);
     try {
       const { credentials } = await client.refreshAccessToken();
       const updated: StoredTokens = {
@@ -160,12 +161,12 @@ export async function createAuthenticatedClient(): Promise<OAuth2Client> {
         stored_at: Date.now(),
         ...(credentials.refresh_token ? { refresh_token: credentials.refresh_token } : {}),
       };
-      tokenStore.set(updated);
+      tokenStore.set(updated, resolvedProfile);
       client.setCredentials(credentials);
     } catch (err) {
-      logger.warn("Token refresh failed, starting new OAuth flow...", { err });
-      tokenStore.clear();
-      return runOAuthFlow();
+      logger.warn(`Token refresh failed for profile "${resolvedProfile}", starting new OAuth flow...`, { err });
+      tokenStore.clear(resolvedProfile);
+      return runOAuthFlow(resolvedProfile);
     }
   }
 

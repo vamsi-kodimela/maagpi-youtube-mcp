@@ -23,7 +23,7 @@ export function registerPublishingTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return setPrivacy(yt, params.videoId, params.privacyStatus);
-        });
+        }, params.channel);
         trackQuota("videos.update", QUOTA_COSTS["videos.update"]);
         invalidateRelated("videos.update");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.update"] ?? 50) });
@@ -42,7 +42,7 @@ export function registerPublishingTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return schedulePublish(yt, params.videoId, params.publishAt, params.privacyStatus);
-        });
+        }, params.channel);
         trackQuota("videos.update", QUOTA_COSTS["videos.update"]);
         invalidateRelated("videos.update");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.update"] ?? 50) });
@@ -61,7 +61,7 @@ export function registerPublishingTools(server: McpServer): void {
         const video = await withAuthRetry(async (auth) => {
           const yt = buildYouTubeClient(auth);
           return setPremiere(yt, params.videoId, params.premiereAt);
-        });
+        }, params.channel);
         trackQuota("videos.update", QUOTA_COSTS["videos.update"]);
         invalidateRelated("videos.update");
         return toolResult({ success: true, data: video, quota: getQuotaSummary(QUOTA_COSTS["videos.update"] ?? 50) });
